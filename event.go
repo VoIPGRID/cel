@@ -45,7 +45,8 @@ func (e *InvalidUnmarshalError) Error() string {
 //
 // Additionally, using a struct tag `cel="N,json"` will take that record
 // field, and use encoding/json.Unmarshal to convert its contents to that
-// struct field.
+// struct field. Adding ",noerror" will allow for json.Unmarshal errors to
+// happen silently.
 //
 // Without ",json" the supported field types are:
 //  - string
@@ -84,7 +85,11 @@ func mapField(record []string, v reflect.Value, tag string) error {
 		if v.Kind() != reflect.Ptr {
 			v = v.Addr()
 		}
-		return json.Unmarshal([]byte(record[field]), v.Interface())
+		err = json.Unmarshal([]byte(record[field]), v.Interface())
+		if contains(tagParts, "noerror") {
+			return nil
+		}
+		return err
 	}
 	if v.Kind() == reflect.String {
 		v.SetString(record[int(field)])
